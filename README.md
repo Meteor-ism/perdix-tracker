@@ -13,6 +13,7 @@ To run the backend, `cd` into its directory, and run these commands if it's the 
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
 If it isn't the first time, run the following commands:
