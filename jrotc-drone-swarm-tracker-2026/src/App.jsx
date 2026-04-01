@@ -154,6 +154,7 @@ export default function App(){
   const [playing, setPlaying] = useState(true)
   const [speed, setSpeed] = useState(1)
   const [tick, setTick] = useState(0)
+  const [videoDuration, setVideoDuration] = useState(600)
   const [selectedId, setSelectedId] = useState(7)
   const [notesById, setNotesById] = useState({})
   const [search, setSearch] = useState('')
@@ -171,6 +172,7 @@ export default function App(){
   const [videoReady, setVideoReady] = useState(false)
   const [videoLoadError, setVideoLoadError] = useState(false)
   const [liveFrameUrl, setLiveFrameUrl] = useState(`${CV_LIVE_FRAME_URL}?frame=0`)
+  const [restartNonce, setRestartNonce] = useState(0)
   const [serviceState, setServiceState] = useState({
     status: 'idle',
     channel: 'live',
@@ -193,12 +195,13 @@ export default function App(){
   const videoRef = useRef(null)
   const overlayCanvasRef = useRef(null)
   const videoFrameCallbackRef = useRef(null)
+  const seekTargetRef = useRef(null)
   const midRef = useRef(null)
   const focusStackRef = useRef(null)
 
   const wsTargetUrl = mode === 'replay' ? CV_REPLAY_WS_URL : CV_WS_URL
   const serviceDriven = mode !== 'sim' && serviceState.hasData
-  const playbackDisabled = serviceDriven
+  const simControlsDisabled = mode !== 'sim'
   const simFps = serviceState.fps > 0 ? serviceState.fps : 30
   const showVideoFallback = videoLoadError
   const showOverlayCanvas = !showVideoFallback && mode !== 'sim'
@@ -383,6 +386,14 @@ export default function App(){
 
     const onFrame = (_now, metadata)=>{
       if (!active) return
+      if (seekTargetRef.current !== null){
+        if (Math.abs(metadata.mediaTime - seekTargetRef.current) <= 0.2){
+          seekTargetRef.current = null
+        } else {
+          videoFrameCallbackRef.current = video.requestVideoFrameCallback(onFrame)
+          return
+        }
+      }
       setTick(metadata.mediaTime)
       videoFrameCallbackRef.current = video.requestVideoFrameCallback(onFrame)
     }
@@ -401,8 +412,8 @@ export default function App(){
   useEffect(()=>{
     if (!serviceDriven) return
     setVideoLoadError(false)
-    setLiveFrameUrl(`${CV_LIVE_FRAME_URL}?frame=${serviceState.frame}`)
-  }, [serviceDriven, serviceState.frame])
+    setLiveFrameUrl(`${CV_LIVE_FRAME_URL}?frame=${serviceState.frame}&restart=${restartNonce}`)
+  }, [serviceDriven, serviceState.frame, restartNonce])
 
   useEffect(()=>{
     if (!serviceDriven) return
@@ -559,7 +570,7 @@ export default function App(){
       if (retryTimer) window.clearTimeout(retryTimer)
       if (wsRef.current) wsRef.current.close()
     }
-  }, [mode, wsTargetUrl])
+  }, [mode, wsTargetUrl, restartNonce])
 
   const t = tick * 1000
   const simulatedTracks = useMemo(()=>{
@@ -801,10 +812,55 @@ export default function App(){
     URL.revokeObjectURL(url)
   }
 
-  const rewind = ()=> setTick(v=> Math.max(0, v - (12 / simFps)))
-  const stepBack = ()=> setTick(v=> Math.max(0, v - (1 / simFps)))
-  const stepFwd = ()=> setTick(v=> v + (1 / simFps))
-  const fastFwd = ()=> setTick(v=> v + (12 / simFps))
+  const setSimTick = (nextTick)=>{
+    seekTargetRef.current = nextTick
+    setTick(nextTick)
+  }
+  const simSeekBack = ()=> setSimTick(Math.max(0, tick - 5))
+  const simSeekFwd = ()=> setSimTick(Math.min(videoDuration, tick + 5))
+  const restartVideo = ()=>{
+    if (serviceDriven){
+      seekTargetRef.current = 0
+      setTick(0)
+      setRestartNonce((value)=>value + 1)
+      return
+    }
+
+    const video = videoRef.current
+    if (!video) return
+
+    const resumeAfterRestart = playing
+    seekTargetRef.current = 0
+    setTick(0)
+    setVideoLoadError(false)
+    video.pause()
+
+    const finishRestart = ()=>{
+      if (typeof video.fastSeek === 'function'){
+        video.fastSeek(0)
+      } else {
+        video.currentTime = 0
+      }
+
+      if (resumeAfterRestart){
+        video.play().catch(()=>{})
+      }
+    }
+
+    if (video.readyState >= 1){
+      finishRestart()
+    } else {
+      video.addEventListener('loadedmetadata', finishRestart, { once: true })
+      video.load()
+    }
+  }
+  const formatClock = (seconds)=>{
+    const safe = Math.max(0, Math.floor(seconds))
+    const minutes = Math.floor(safe / 60)
+    const secs = safe % 60
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }
+  const simRemaining = Math.max(0, videoDuration - tick)
 
   const W=680, H=520
   const cx=W/2, cy=H/2
@@ -850,11 +906,11 @@ export default function App(){
                 muted
                 loop
                 playsInline
-                controls
                 preload="auto"
                 onLoadedMetadata={(event)=>{
                   setVideoReady(true)
                   setVideoLoadError(false)
+                  setVideoDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 600)
                   setTick(event.currentTarget.currentTime || 0)
                 }}
                 onError={()=>{
@@ -862,6 +918,13 @@ export default function App(){
                   setVideoLoadError(true)
                 }}
                 onTimeUpdate={(event)=>{
+                  if (seekTargetRef.current !== null){
+                    if (Math.abs(event.currentTarget.currentTime - seekTargetRef.current) <= 0.2){
+                      seekTargetRef.current = null
+                    } else {
+                      return
+                    }
+                  }
                   if (playing){
                     setTick(event.currentTarget.currentTime || 0)
                   }
@@ -895,32 +958,34 @@ export default function App(){
         {!focusMode ? (
           <>
             <div className="controlsRow">
-              <button className="btn primary" disabled={playbackDisabled} onClick={()=>setPlaying(p=>!p)}>{playing ? 'Pause' : 'Play'}</button>
-              <button className="btn" disabled={playbackDisabled} onClick={stepBack}>Step -1</button>
-              <button className="btn" disabled={playbackDisabled} onClick={stepFwd}>Step +1</button>
-              <button className="btn" disabled={playbackDisabled} onClick={rewind}>-12</button>
-              <button className="btn" disabled={playbackDisabled} onClick={fastFwd}>+12</button>
-
-              <select className="select" disabled={playbackDisabled} value={speed} onChange={(e)=>setSpeed(Number(e.target.value))}>
-                <option value={0.5}>0.5×</option>
-                <option value={1}>1×</option>
-                <option value={2}>2×</option>
-                <option value={4}>4×</option>
-              </select>
-
-              <div className="small">
-                {serviceDriven
-                  ? `${serviceState.channel === 'replay' ? 'Replay' : 'Live'} CV frame feed • T+ ${fmt(serviceState.playbackSeconds, 2)}s`
-                  : `Playback • T+ ${fmt(tick, 2)}s`}
+              <input
+                className="range"
+                disabled={simControlsDisabled}
+                type="range"
+                min="0"
+                max={videoDuration}
+                step={1 / simFps}
+                value={Math.min(tick, videoDuration)}
+                onChange={(e)=>setSimTick(Number(e.target.value))}
+              />
+              <div className="timeRow">
+                <div className="small">{formatClock(tick)}</div>
+                <div className="small">-{formatClock(simRemaining)}</div>
               </div>
-            </div>
-
-            <div style={{ marginTop: 10 }}>
-              <input className="range" disabled={playbackDisabled} type="range" min="0" max="600" step={1 / simFps} value={tick} onChange={(e)=>setTick(Number(e.target.value))} />
-              <div className="small">
-                {serviceDriven
-                  ? `${serviceState.channel === 'replay' ? 'Replay engine clock' : 'Live pipeline'} • service-driven frames are authoritative`
-                  : 'Timeline scrub • deterministic simulation fallback'}
+              <div className="transportRow">
+                <button className="btn" disabled={simControlsDisabled} onClick={simSeekBack}>-5s</button>
+                <button className="btn primary" disabled={simControlsDisabled} onClick={()=>setPlaying(p=>!p)}>
+                  {playing ? 'Pause' : 'Play'}
+                </button>
+                <button className="btn" disabled={simControlsDisabled} onClick={simSeekFwd}>+5s</button>
+              </div>
+              <div className="small controlsHint">
+                {mode === 'sim'
+                  ? 'Simulation playback controls'
+                  : 'Playback controls available in SIM mode only'}
+              </div>
+              <div className="restartRow">
+                <button className="btn" onClick={restartVideo}>Restart</button>
               </div>
             </div>
           </>
@@ -1080,10 +1145,6 @@ export default function App(){
           </button>
           <button className="btn" onClick={()=>setFocusMode(true)}>Presentation View</button>
           <button className="btn" onClick={()=>setShowVectors(v=>!v)}>{showVectors ? 'Vectors: ON' : 'Vectors: OFF'}</button>
-          <button className="btn" onClick={()=>setAlertsOnly(v=>!v)}>{alertsOnly ? 'Alerts: ON' : 'Alerts: OFF'}</button>
-          <button className="btn primary" onClick={()=>setPlaying(p=>!p)}>{playing ? 'Pause' : 'Play'}</button>
-          <button className="btn" onClick={rewind}>⟲ Rewind</button>
-          <button className="btn" onClick={fastFwd}>Fast ⟳</button>
           <button className="btn" onClick={exportReport}>Export Report</button>
         </div>
       </div>

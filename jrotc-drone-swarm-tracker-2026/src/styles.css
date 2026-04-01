@@ -55,6 +55,11 @@ a{ color:inherit; text-decoration:none; }
   padding: 12px;
   gap:12px;
   overflow:hidden;
+  background:
+    radial-gradient(1200px 800px at 20% 10%, rgba(34,197,94,.10), transparent 60%),
+    radial-gradient(900px 700px at 75% 20%, rgba(34,197,94,.10), transparent 60%),
+    radial-gradient(1200px 800px at 50% 95%, rgba(14,26,47,.8), transparent 55%),
+    linear-gradient(180deg, var(--bg0), var(--bg1) 45%, var(--bg2));
 }
 .focusBar{
   display:flex;
@@ -85,6 +90,7 @@ a{ color:inherit; text-decoration:none; }
 }
 .focusPanel .panel{
   height:100%;
+  box-shadow:none;
 }
 .focusPanel .panelBody{
   display:flex;
@@ -254,12 +260,12 @@ a{ color:inherit; text-decoration:none; }
   top:50%;
   transform:translate(-50%, -50%);
   border-radius:999px;
-  background: rgba(159,178,209,.42);
+  background: transparent;
   transition: background .15s ease, box-shadow .15s ease;
 }
 .paneResizer:hover::before{
-  background: rgba(56,189,248,.9);
-  box-shadow: 0 0 14px rgba(56,189,248,.3);
+  background: transparent;
+  box-shadow: none;
 }
 .paneResizer.vertical{
   cursor:col-resize;
@@ -328,7 +334,7 @@ a{ color:inherit; text-decoration:none; }
   height:100%;
   aspect-ratio:16 / 9;
   overflow:hidden;
-  background:#02050b;
+  background:transparent;
 }
 .videoFeed{
   position:absolute;
@@ -336,7 +342,7 @@ a{ color:inherit; text-decoration:none; }
   width:100%;
   height:100%;
   object-fit:cover;
-  background:#02050b;
+  background:transparent;
 }
 .videoFallback{
   position:absolute;
@@ -413,8 +419,30 @@ a{ color:inherit; text-decoration:none; }
 
 /* Controls */
 .controlsRow{
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:stretch;
   margin-top: 12px;
+}
+.timeRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.transportRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.restartRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.controlsHint{
+  text-align:center;
 }
 .select{
   border:1px solid rgba(255,255,255,.12);
