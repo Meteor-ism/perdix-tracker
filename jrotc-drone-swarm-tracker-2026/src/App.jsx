@@ -204,7 +204,7 @@ export default function App(){
   const showOverlayCanvas = !showVideoFallback && mode !== 'sim'
   const showVideoHud = !showVideoFallback && hudEnabled
   const focusVideoBoxStyle = focusMode
-    ? { height: `${Math.max(180, focusTopHeight - 176)}px`, width: 'auto', aspectRatio: '16 / 9' }
+    ? { height: `${Math.max(180, focusTopHeight - 92)}px`, width: 'auto', aspectRatio: '16 / 9' }
     : undefined
   const splitterSize = 10
   const minLeftPane = 420
@@ -212,7 +212,7 @@ export default function App(){
   const minRightPane = 320
   const minBottomPane = 96
   const maxBottomPane = 360
-  const minFocusTopPane = 356
+  const minFocusTopPane = 275
   const minFocusBottomPane = 220
 
   const startResize = (type, event)=>{
@@ -892,35 +892,39 @@ export default function App(){
         </div>
         </div>
 
-        <div className="controlsRow">
-          <button className="btn primary" disabled={playbackDisabled} onClick={()=>setPlaying(p=>!p)}>{playing ? 'Pause' : 'Play'}</button>
-          <button className="btn" disabled={playbackDisabled} onClick={stepBack}>Step -1</button>
-          <button className="btn" disabled={playbackDisabled} onClick={stepFwd}>Step +1</button>
-          <button className="btn" disabled={playbackDisabled} onClick={rewind}>-12</button>
-          <button className="btn" disabled={playbackDisabled} onClick={fastFwd}>+12</button>
+        {!focusMode ? (
+          <>
+            <div className="controlsRow">
+              <button className="btn primary" disabled={playbackDisabled} onClick={()=>setPlaying(p=>!p)}>{playing ? 'Pause' : 'Play'}</button>
+              <button className="btn" disabled={playbackDisabled} onClick={stepBack}>Step -1</button>
+              <button className="btn" disabled={playbackDisabled} onClick={stepFwd}>Step +1</button>
+              <button className="btn" disabled={playbackDisabled} onClick={rewind}>-12</button>
+              <button className="btn" disabled={playbackDisabled} onClick={fastFwd}>+12</button>
 
-          <select className="select" disabled={playbackDisabled} value={speed} onChange={(e)=>setSpeed(Number(e.target.value))}>
-            <option value={0.5}>0.5×</option>
-            <option value={1}>1×</option>
-            <option value={2}>2×</option>
-            <option value={4}>4×</option>
-          </select>
+              <select className="select" disabled={playbackDisabled} value={speed} onChange={(e)=>setSpeed(Number(e.target.value))}>
+                <option value={0.5}>0.5×</option>
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={4}>4×</option>
+              </select>
 
-          <div className="small">
-            {serviceDriven
-              ? `${serviceState.channel === 'replay' ? 'Replay' : 'Live'} CV frame feed • T+ ${fmt(serviceState.playbackSeconds, 2)}s`
-              : `Playback • T+ ${fmt(tick, 2)}s`}
-          </div>
-        </div>
+              <div className="small">
+                {serviceDriven
+                  ? `${serviceState.channel === 'replay' ? 'Replay' : 'Live'} CV frame feed • T+ ${fmt(serviceState.playbackSeconds, 2)}s`
+                  : `Playback • T+ ${fmt(tick, 2)}s`}
+              </div>
+            </div>
 
-        <div style={{ marginTop: 10 }}>
-          <input className="range" disabled={playbackDisabled} type="range" min="0" max="600" step={1 / simFps} value={tick} onChange={(e)=>setTick(Number(e.target.value))} />
-          <div className="small">
-            {serviceDriven
-              ? `${serviceState.channel === 'replay' ? 'Replay engine clock' : 'Live pipeline'} • service-driven frames are authoritative`
-              : 'Timeline scrub • deterministic simulation fallback'}
-          </div>
-        </div>
+            <div style={{ marginTop: 10 }}>
+              <input className="range" disabled={playbackDisabled} type="range" min="0" max="600" step={1 / simFps} value={tick} onChange={(e)=>setTick(Number(e.target.value))} />
+              <div className="small">
+                {serviceDriven
+                  ? `${serviceState.channel === 'replay' ? 'Replay engine clock' : 'Live pipeline'} • service-driven frames are authoritative`
+                  : 'Timeline scrub • deterministic simulation fallback'}
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   )
@@ -1074,7 +1078,7 @@ export default function App(){
           <button className={`btn ${detectorBusy ? 'active' : ''}`} disabled={mode === 'sim' || detectorBusy} onClick={toggleDetector}>
             Detector: {detectorBusy ? 'SWITCHING…' : detectorModel}
           </button>
-          <button className="btn" onClick={()=>setFocusMode(true)}>Video + Radar Only</button>
+          <button className="btn" onClick={()=>setFocusMode(true)}>Presentation View</button>
           <button className="btn" onClick={()=>setShowVectors(v=>!v)}>{showVectors ? 'Vectors: ON' : 'Vectors: OFF'}</button>
           <button className="btn" onClick={()=>setAlertsOnly(v=>!v)}>{alertsOnly ? 'Alerts: ON' : 'Alerts: OFF'}</button>
           <button className="btn primary" onClick={()=>setPlaying(p=>!p)}>{playing ? 'Pause' : 'Play'}</button>
