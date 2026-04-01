@@ -1104,7 +1104,7 @@ export default function App(){
   return (
     <div
       className="shell"
-      style={{ gridTemplateRows: `64px minmax(0, 1fr) ${splitterSize}px ${bottomPaneHeight}px` }}
+      style={{ gridTemplateRows: `88px minmax(0, 1fr) ${splitterSize}px ${bottomPaneHeight + 12}px` }}
     >
       <div className="topbar">
         <div className="brand">
