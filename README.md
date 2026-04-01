@@ -1,6 +1,6 @@
 This is the PERDIX drone tracker demo for my GenAI class.
 # About
-When I use ~, it means relative to the directory.
+When I use `~`, it is relative to the directory of the project, not to the user.
 
 The frontend code is in `~/jrotc-drone-swarm-tracker-2026`.
 
