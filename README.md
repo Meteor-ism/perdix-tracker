@@ -6,6 +6,8 @@ The frontend code is in `~/jrotc-drone-swarm-tracker-2026`.
 
 The backend code is in `~/perdix_tracker`
 # How to Run
+Run instructions are written for Linux/MacOS.
+
 To run the frontend, `cd` into its directory and run the following command: `npm run dev`. Click or ctrl-click the link to open the web UI.
 
 To run the backend, `cd` into its directory, and run these commands if it's the first time running it:
