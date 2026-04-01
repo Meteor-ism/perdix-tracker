@@ -163,7 +163,7 @@ export default function App(){
   const [mode, setMode] = useState('live')
   const [focusMode, setFocusMode] = useState(false)
   const [focusTopHeight, setFocusTopHeight] = useState(520)
-  const [presentationHudEnabled, setPresentationHudEnabled] = useState(true)
+  const [hudEnabled, setHudEnabled] = useState(true)
   const [leftPaneWidth, setLeftPaneWidth] = useState(620)
   const [centerPaneWidth, setCenterPaneWidth] = useState(500)
   const [bottomPaneHeight, setBottomPaneHeight] = useState(104)
@@ -202,7 +202,7 @@ export default function App(){
   const simFps = serviceState.fps > 0 ? serviceState.fps : 30
   const showVideoFallback = videoLoadError
   const showOverlayCanvas = !showVideoFallback && mode !== 'sim'
-  const showVideoHud = !showVideoFallback && (!focusMode || presentationHudEnabled)
+  const showVideoHud = !showVideoFallback && hudEnabled
   const focusVideoBoxStyle = focusMode
     ? { height: `${Math.max(180, focusTopHeight - 176)}px`, width: 'auto', aspectRatio: '16 / 9' }
     : undefined
@@ -824,8 +824,8 @@ export default function App(){
           <div className="t">Video Feed</div>
         </div>
         <div className="kpi">
-          <button className={`pill pillToggle ${presentationHudEnabled ? 'active' : ''}`} onClick={()=>setPresentationHudEnabled((value)=>!value)}>
-            HUD: {presentationHudEnabled ? 'ON' : 'OFF'}
+          <button className={`pill pillToggle ${hudEnabled ? 'active' : ''}`} onClick={()=>setHudEnabled((value)=>!value)}>
+            HUD: {hudEnabled ? 'ON' : 'OFF'}
           </button>
           <span>{serviceDriven ? `${serviceState.channel.toUpperCase()} stream active` : 'Simulation mode'}</span>
         </div>
@@ -1187,7 +1187,6 @@ export default function App(){
                 <thead>
                   <tr>
                     <th>Callsign</th>
-                    <th>Type</th>
                     <th>Conf</th>
                     <th>Trend</th>
                     <th>Bear</th>
@@ -1202,7 +1201,6 @@ export default function App(){
                     return (
                       <tr key={tr.id} onClick={()=>setSelectedId(tr.id)} style={{ background: isSel ? 'rgba(56,189,248,.08)' : undefined }}>
                         <td style={{ fontWeight:650 }}>{tr.callsign}</td>
-                        <td><span className="badge"><span className="m">{typeLabel(tr.type)}</span></span></td>
                         <td><span className={`badge ${bClass}`}><span className="m">{fmt(tr.confidence,2)}</span></span></td>
                         <td>
                           <div className={`trend ${trend}`}>
